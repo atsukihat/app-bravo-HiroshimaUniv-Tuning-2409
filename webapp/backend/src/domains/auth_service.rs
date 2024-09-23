@@ -115,25 +115,23 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
 
             // セッショントークンの生成
             let session_token = generate_session_token();
-            self.repository
-                .create_session(user.id, &session_token)
-                .await?;
+
+            // 並列実行するタスク
+            let create_session_task = self.repository.create_session(user.id, &session_token);
 
             // ディスパッチャーIDとエリアIDの初期化
-            let mut dispatcher_id = None;
-            let mut area_id = None;
-
-            // ユーザーのロールが "dispatcher" の場合
-            if user.role == "dispatcher" {
-                if let Some(dispatcher) =
-                    self.repository.find_dispatcher_by_user_id(user.id).await?
-                {
-                    dispatcher_id = Some(dispatcher.id);
-                    area_id = Some(dispatcher.area_id);
-                } else {
-                    return Err(AppError::InternalServerError);
+            let (dispatcher_id, area_id) = if user.role == "dispatcher" {
+                // ディスパッチャー情報の取得を非同期で実行
+                match self.repository.find_dispatcher_by_user_id(user.id).await {
+                    Ok(Some(dispatcher)) => (Some(dispatcher.id), Some(dispatcher.area_id)),
+                    _ => return Err(AppError::InternalServerError),
                 }
-            }
+            } else {
+                (None, None)
+            };
+
+            // 並列実行でセッション作成を待機
+            create_session_task.await?;
 
             // 最終的なログインレスポンスを作成して返す
             Ok(LoginResponseDto {
