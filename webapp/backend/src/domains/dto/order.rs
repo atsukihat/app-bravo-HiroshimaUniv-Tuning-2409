@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
 // Input Data Structure
 
@@ -26,7 +27,7 @@ pub struct UpdateOrderStatusRequestDto {
 
 // Output Data Structure
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, FromRow)]
 pub struct OrderDto {
     pub id: i32,
     pub client_id: i32,

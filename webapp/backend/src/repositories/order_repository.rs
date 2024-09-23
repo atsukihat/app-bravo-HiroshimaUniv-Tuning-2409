@@ -1,3 +1,4 @@
+use crate::domains::dto::order::OrderDto;
 use crate::domains::order_service::OrderRepository;
 use crate::errors::AppError;
 use crate::models::order::Order;
@@ -50,36 +51,21 @@ impl OrderRepository for OrderRepositoryImpl {
         sort_order: Option<String>,
         status: Option<String>,
         area: Option<i32>,
-    ) -> Result<Vec<Order>, AppError> {
+    ) -> Result<Vec<OrderDto>, AppError> {
         let offset = page * page_size;
-        let order_clause = format!(
-            "ORDER BY {} {}",
-            match sort_by.as_deref() {
-                Some("car_value") => "o.car_value",
-                Some("status") => "o.status",
-                Some("order_time") => "o.order_time",
-                _ => "o.order_time",
-            },
-            match sort_order.as_deref() {
-                Some("DESC") => "DESC",
-                Some("desc") => "DESC",
-                _ => "ASC",
-            }
-        );
 
-        let where_clause = match (status.clone(), area) {
-            (Some(_), Some(_)) => "WHERE o.status = ? AND n.area_id = ?".to_string(),
-            (None, Some(_)) => "WHERE n.area_id = ?".to_string(),
-            (Some(_), None) => "WHERE o.status = ?".to_string(),
-            _ => "".to_string(),
-        };
-
-        let sql = format!(
+        let mut sql = String::from(
             "SELECT 
                 o.id, 
                 o.client_id, 
+                c.username AS client_username,
                 o.dispatcher_id, 
+                d.user_id AS dispatcher_user_id,
+                du.username AS dispatcher_username,
                 o.tow_truck_id, 
+                t.driver_id AS driver_user_id,
+                u.username AS driver_username,
+                n.area_id AS area_id,
                 o.status, 
                 o.node_id, 
                 o.car_value, 
@@ -87,51 +73,59 @@ impl OrderRepository for OrderRepositoryImpl {
                 o.completed_time
             FROM
                 orders o
-            JOIN
-                nodes n
-            ON 
-                o.node_id = n.id
-            {} 
-            {} 
-            LIMIT ? 
-            OFFSET ?",
-            where_clause, order_clause
+            LEFT JOIN
+                users c ON o.client_id = c.id
+            LEFT JOIN
+                dispatchers d ON o.dispatcher_id = d.id
+            LEFT JOIN
+                users du ON d.user_id = du.id
+            LEFT JOIN
+                tow_trucks t ON o.tow_truck_id = t.id
+            LEFT JOIN
+                users u ON t.driver_id = u.id
+            LEFT JOIN
+                nodes n ON o.node_id = n.id",
         );
 
-        let orders = match (status, area) {
-            (Some(status), Some(area)) => {
-                sqlx::query_as::<_, Order>(&sql)
-                    .bind(status)
-                    .bind(area)
-                    .bind(page_size)
-                    .bind(offset)
-                    .fetch_all(&self.pool)
-                    .await?
+        // WHERE句を動的に追加
+        let mut conditions = Vec::new();
+        if let Some(status) = &status {
+            conditions.push(format!("o.status = '{}'", status));
+        }
+        if let Some(area) = &area {
+            conditions.push(format!("n.area_id = {}", area));
+        }
+
+        if !conditions.is_empty() {
+            sql.push_str(" WHERE ");
+            sql.push_str(&conditions.join(" AND "));
+        }
+
+        // ORDER BY句を追加
+        let order_clause = format!(
+            " ORDER BY {} {}",
+            match sort_by.as_deref() {
+                Some("car_value") => "o.car_value",
+                Some("status") => "o.status",
+                Some("order_time") => "o.order_time",
+                _ => "o.order_time",
+            },
+            match sort_order.as_deref() {
+                Some("DESC") | Some("desc") => "DESC",
+                _ => "ASC",
             }
-            (None, Some(area)) => {
-                sqlx::query_as::<_, Order>(&sql)
-                    .bind(area)
-                    .bind(page_size)
-                    .bind(offset)
-                    .fetch_all(&self.pool)
-                    .await?
-            }
-            (Some(status), None) => {
-                sqlx::query_as::<_, Order>(&sql)
-                    .bind(status)
-                    .bind(page_size)
-                    .bind(offset)
-                    .fetch_all(&self.pool)
-                    .await?
-            }
-            _ => {
-                sqlx::query_as::<_, Order>(&sql)
-                    .bind(page_size)
-                    .bind(offset)
-                    .fetch_all(&self.pool)
-                    .await?
-            }
-        };
+        );
+        sql.push_str(&order_clause);
+
+        // LIMITとOFFSETを追加
+        sql.push_str(" LIMIT ? OFFSET ?");
+
+        let orders = sqlx::query_as::<_, OrderDto>(&sql)
+            .bind(page_size)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(AppError::from)?;
 
         Ok(orders)
     }
