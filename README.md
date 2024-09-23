@@ -10,6 +10,11 @@
 ├── webapp       # バックエンド、フロントエンド、Nginx、MySQL、E2Eテストの実装
 ```
 
+## 追記ドキュメント
+
+Database を把握するため[ER 図](document/md/design/01_ErFigure.md)
+データのやり取りを把握するための[シーケンス図](document/md/design/02_SequenceFigure.md)
+
 ## ドキュメント
 
 競技開始後、[はじめに](document/md/start/01_Scenario.md)を読み[最初にやること（VM の環境構築）](document/md/setup/01_Start.md)を完了してください。
