@@ -1,0 +1,27 @@
+name: 改善提案
+description: 改善方法を提案する時のテンプレート
+title: "[IMPROVE]:"
+labels: ["improve"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 【必須】問題点
+      description: 問題点や想定される原因を入力して下さい。
+      placeholder: 〇〇の処理にとても時間がかかる。
+    validations:
+      required: true
+  - type: textarea
+    id: modification
+    attributes:
+      label: 改善案
+      description: 改善案があれば入力して下さい。
+    validations:
+      required: false
+  - type: textarea
+    id: others
+    attributes:
+      label: その他
+      description: 関連Issueや参考サイトなど、その他伝えたいことあれば入力して下さい。
+    validations:
+      required: false
