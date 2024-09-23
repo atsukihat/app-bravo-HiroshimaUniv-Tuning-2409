@@ -107,46 +107,47 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         username: &str,
         password: &str,
     ) -> Result<LoginResponseDto, AppError> {
-        match self.repository.find_user_by_username(username).await? {
-            Some(user) => {
-                let is_password_valid = verify_password(&user.password, password).unwrap();
-                if !is_password_valid {
-                    return Err(AppError::Unauthorized);
-                }
+        if let Some(user) = self.repository.find_user_by_username(username).await? {
+            // パスワードの検証
+            if !verify_password(&user.password, password).unwrap() {
+                return Err(AppError::Unauthorized);
+            }
 
-                let session_token = generate_session_token();
-                self.repository
-                    .create_session(user.id, &session_token)
-                    .await?;
+            // セッショントークンの生成
+            let session_token = generate_session_token();
+            self.repository
+                .create_session(user.id, &session_token)
+                .await?;
 
-                match user.role.as_str() {
-                    "dispatcher" => {
-                        match self.repository.find_dispatcher_by_user_id(user.id).await? {
-                            Some(dispatcher) => Ok(LoginResponseDto {
-                                user_id: user.id,
-                                username: user.username,
-                                session_token,
-                                role: user.role.clone(),
-                                dispatcher_id: Some(dispatcher.id),
-                                area_id: Some(dispatcher.area_id),
-                            }),
-                            None => Err(AppError::InternalServerError),
-                        }
-                    }
-                    _ => Ok(LoginResponseDto {
-                        user_id: user.id,
-                        username: user.username,
-                        session_token,
-                        role: user.role.clone(),
-                        dispatcher_id: None,
-                        area_id: None,
-                    }),
+            // ディスパッチャーIDとエリアIDの初期化
+            let mut dispatcher_id = None;
+            let mut area_id = None;
+
+            // ユーザーのロールが "dispatcher" の場合
+            if user.role == "dispatcher" {
+                if let Some(dispatcher) =
+                    self.repository.find_dispatcher_by_user_id(user.id).await?
+                {
+                    dispatcher_id = Some(dispatcher.id);
+                    area_id = Some(dispatcher.area_id);
+                } else {
+                    return Err(AppError::InternalServerError);
                 }
             }
-            None => Err(AppError::Unauthorized),
+
+            // 最終的なログインレスポンスを作成して返す
+            Ok(LoginResponseDto {
+                user_id: user.id,
+                username: user.username,
+                session_token,
+                role: user.role.clone(),
+                dispatcher_id,
+                area_id,
+            })
+        } else {
+            Err(AppError::Unauthorized)
         }
     }
-
     pub async fn logout_user(&self, session_token: &str) -> Result<(), AppError> {
         self.repository.delete_session(session_token).await?;
         Ok(())
