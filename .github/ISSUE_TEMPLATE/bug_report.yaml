@@ -1,0 +1,43 @@
+name: バグ修正
+description: バグを見つけた時のテンプレート
+title: "[BUG]:"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: procedure
+    attributes:
+      label: 再現手順
+      description: バグの再現手順をできるだけ詳細に入力して下さい。
+      placeholder: "ex)\n1. ログイン画面を開く\n1. ユーザー名、パスワードを入力する\n..."
+    validations:
+      required: false
+  - type: textarea
+    id: trouble
+    attributes:
+      label: 修正しないと困ること
+      description: このバグを修正しない場合にどう困るかを入力して下さい。
+      placeholder: "ex) ログインできないので、ユーザーがサービスを利用できない。"
+    validations:
+      required: false
+  - type: textarea
+    id: cause
+    attributes:
+      label: 原因
+      description: 考えらえるこのバグが起きる原因を入力して下さい。
+      placeholder: "ex) バックエンドからのレスポンスが500エラーのため、何かしたバックエンドで不具合が発生しているかも。"
+    validations:
+      required: false
+  - type: textarea
+    id: modification
+    attributes:
+      label: 修正案
+      description: バグの修正案があれば入力して下さい。
+    validations:
+      required: false
+  - type: textarea
+    id: others
+    attributes:
+      label: その他
+      description: 関連Issueや参考サイトなど、その他伝えたいことあれば入力して下さい。
+    validations:
+      required: false
