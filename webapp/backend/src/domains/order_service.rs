@@ -17,7 +17,7 @@ pub trait OrderRepository {
         sort_order: Option<String>,
         status: Option<String>,
         area: Option<i32>,
-    ) -> Result<Vec<Order>, AppError>;
+    ) -> Result<Vec<OrderDto>, AppError>;
     async fn create_order(
         &self,
         customer_id: i32,
@@ -171,13 +171,12 @@ impl<
         status: Option<String>,
         area: Option<i32>,
     ) -> Result<Vec<OrderDto>, AppError> {
-        // 一括でデータを取得する
+        // リポジトリ層からデータを取得し、そのまま返す
         let orders = self
             .order_repository
             .get_paginated_orders(page, page_size, sort_by, sort_order, status, area)
             .await?;
 
-        // 取得したOrderDtoをそのまま返す
         Ok(orders)
     }
 

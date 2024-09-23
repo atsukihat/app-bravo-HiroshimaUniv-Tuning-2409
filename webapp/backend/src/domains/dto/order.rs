@@ -27,7 +27,7 @@ pub struct UpdateOrderStatusRequestDto {
 
 // Output Data Structure
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, FromRow)]
 pub struct OrderDto {
     pub id: i32,
     pub client_id: i32,

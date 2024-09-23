@@ -42,6 +42,7 @@ impl OrderRepository for OrderRepositoryImpl {
 
         Ok(())
     }
+
     async fn get_paginated_orders(
         &self,
         page: i32,
