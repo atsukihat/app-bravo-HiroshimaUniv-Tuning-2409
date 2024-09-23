@@ -22,9 +22,9 @@
 1. ローカル環境に、 fork したリポジトリをクローンし、ルートディレクトリにある `init.sh` を実行してください。
 
     ```bash
-    $ git clone https://github.com/atsukihat/app-bravo-HiroshimaUniv-Tuning-2409.git
-    $ cd app-bravo-HiroshimaUniv-Tuning-2409
-    $ bash init.sh 52.185.136.102 app-bravo.ftt2407.dabaas.net
+    git clone https://github.com/atsukihat/app-bravo-HiroshimaUniv-Tuning-2409.git
+    cd app-bravo-HiroshimaUniv-Tuning-2409
+    bash init.sh 52.185.136.102 app-bravo.ftt2407.dabaas.net
     ```
 
     「初期化に成功しました。」という出力がされていることを確認し、http://localhost にアクセスして画面が表示されるか確認してみてください。
