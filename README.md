@@ -13,6 +13,7 @@
 ## 追記ドキュメント
 
 Database を把握するため[ER 図](document/md/design/01_ErFigure.md)
+
 データのやり取りを把握するための[シーケンス図](document/md/design/02_SequenceFigure.md)
 
 ## ドキュメント
