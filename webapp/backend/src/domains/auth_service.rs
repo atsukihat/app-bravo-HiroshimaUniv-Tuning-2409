@@ -101,34 +101,46 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         username: &str,
         password: &str,
     ) -> Result<LoginResponseDto, AppError> {
+        // まずユーザー情報を取得
         let user = self
             .repository
             .find_user_by_username(username)
             .await?
             .ok_or(AppError::Unauthorized)?;
+        // パスワードの検証
         if !verify_password(&user.password, password).unwrap() {
             return Err(AppError::Unauthorized);
         }
-        let session_token = generate_session_token();
-        let create_session_task = self.repository.create_session(user.id, &session_token);
-        let (dispatcher_id, area_id) = if user.role == "dispatcher" {
+        // dispatcherかどうかをチェックし、dispatcherなら追加処理を行う
+        if user.role == "dispatcher" {
             let dispatcher = self
                 .repository
                 .find_dispatcher_by_user_id(user.id)
                 .await?
                 .ok_or(AppError::InternalServerError)?;
-            (Some(dispatcher.id), Some(dispatcher.area_id))
-        } else {
-            (None, None)
-        };
+            let session_token = generate_session_token();
+            let create_session_task = self.repository.create_session(user.id, &session_token);
+            create_session_task.await?;
+            return Ok(LoginResponseDto {
+                user_id: user.id,
+                username: user.username.clone(),
+                session_token,
+                role: user.role.clone(),
+                dispatcher_id: Some(dispatcher.id),
+                area_id: Some(dispatcher.area_id),
+            });
+        }
+        // 通常ユーザーの処理
+        let session_token = generate_session_token();
+        let create_session_task = self.repository.create_session(user.id, &session_token);
         create_session_task.await?;
         Ok(LoginResponseDto {
             user_id: user.id,
             username: user.username.clone(),
             session_token,
             role: user.role.clone(),
-            dispatcher_id,
-            area_id,
+            dispatcher_id: None,
+            area_id: None,
         })
     }
     pub async fn logout_user(&self, session_token: &str) -> Result<(), AppError> {
